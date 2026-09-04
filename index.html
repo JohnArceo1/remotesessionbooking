@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KMC Remote Session Booking</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Karla:wght@400;700&display=swap');
+
+:root {
+  --kmc-navy:        #001738;
+  --kmc-orange:      #FF7200;
+  --kmc-light-blue:  #CEDDEF;
+  --kmc-white:       #FFFFFF;
+  --kmc-slate:       #5B6B7F;
+  --kmc-navy-hover:  #002b5f;
+  --kmc-tint:        #EDF3FA;
+  --kmc-border:      #D6E1EE;
+  --kmc-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --kmc-body:    'Karla', system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: var(--kmc-body);
+  background: var(--kmc-tint);
+  color: var(--kmc-navy);
+}
+
+.kmc-header {
+  background: var(--kmc-navy);
+  color: var(--kmc-white);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.kmc-wordmark {
+  font-family: var(--kmc-display);
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: 0.02em;
+  color: var(--kmc-white);
+}
+.kmc-header-title {
+  font-family: var(--kmc-display);
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--kmc-light-blue);
+}
+
+.tabs {
+  display: flex;
+  background: var(--kmc-navy);
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.tab-btn {
+  flex: 1;
+  padding: 0.85rem 1rem;
+  background: transparent;
+  border: none;
+  color: var(--kmc-light-blue);
+  font-family: var(--kmc-body);
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+}
+.tab-btn.active {
+  color: var(--kmc-white);
+  border-bottom: 3px solid var(--kmc-orange);
+}
+.tab-btn:focus-visible { outline: 2px solid var(--kmc-orange); outline-offset: -2px; }
+
+.container {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 1.75rem 1.25rem 3rem;
+}
+
+.kmc-h1 {
+  font-family: var(--kmc-display);
+  font-weight: 700;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  line-height: 1.15;
+  color: var(--kmc-navy);
+  margin: 0 0 0.25rem;
+}
+.kmc-caption {
+  font-family: var(--kmc-body);
+  font-size: 0.8125rem;
+  color: var(--kmc-slate);
+  margin: 0 0 1.5rem;
+}
+.kmc-kicker {
+  font-family: var(--kmc-body);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--kmc-orange);
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.kmc-card {
+  background: var(--kmc-white);
+  border: 1px solid var(--kmc-border);
+  border-radius: 6px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 23, 56, 0.08);
+  margin-bottom: 1.25rem;
+}
+
+label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--kmc-navy);
+  margin-bottom: 0.35rem;
+}
+.field { margin-bottom: 1.1rem; }
+input[type="text"], input[type="tel"], input[type="email"], input[type="date"] {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--kmc-border);
+  border-radius: 4px;
+  font-family: var(--kmc-body);
+  font-size: 0.9375rem;
+  color: var(--kmc-navy);
+  background: var(--kmc-white);
+}
+input:focus-visible, button:focus-visible {
+  outline: 2px solid var(--kmc-orange);
+  outline-offset: 2px;
+}
+
+.radio-group { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.radio-option {
+  flex: 1;
+  min-width: 110px;
+  border: 1px solid var(--kmc-border);
+  border-radius: 4px;
+  padding: 0.6rem 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+.radio-option.selected { border-color: var(--kmc-navy); background: var(--kmc-tint); }
+.radio-option input { margin: 0; }
+
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.6rem;
+}
+.slot-btn {
+  padding: 0.6rem 0.5rem;
+  border: 1px solid var(--kmc-border);
+  border-radius: 4px;
+  background: var(--kmc-white);
+  color: var(--kmc-navy);
+  font-family: var(--kmc-body);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  text-align: center;
+  line-height: 1.4;
+}
+.slot-btn .cap { display: block; font-weight: 400; font-size: 0.6875rem; color: var(--kmc-slate); }
+.slot-btn.selected { border-color: var(--kmc-navy); background: var(--kmc-navy); color: var(--kmc-white); }
+.slot-btn.selected .cap { color: var(--kmc-light-blue); }
+.slot-btn:disabled { opacity: 0.45; cursor: not-allowed; background: var(--kmc-tint); }
+
+.kmc-btn {
+  font-family: var(--kmc-body);
+  font-weight: 700;
+  font-size: 0.9375rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  background: var(--kmc-navy);
+  color: var(--kmc-white);
+  cursor: pointer;
+  width: 100%;
+}
+.kmc-btn:hover { background: var(--kmc-navy-hover); }
+.kmc-btn--accent { background: var(--kmc-orange); }
+.kmc-btn--accent:hover { background: #e56600; }
+.kmc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.kmc-btn--small { width: auto; padding: 0.55rem 1.1rem; font-size: 0.8125rem; }
+
+.error-text { color: #B3261E; font-size: 0.8125rem; margin-top: 0.3rem; }
+.helper-text { color: var(--kmc-slate); font-size: 0.75rem; margin-top: 0.3rem; }
+
+.confirm-box {
+  text-align: center;
+  padding: 2rem 1.5rem;
+}
+.confirm-box .kmc-stat { font-size: 2.5rem; }
+
+.kmc-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.kmc-table thead th {
+  background: var(--kmc-light-blue);
+  color: var(--kmc-navy);
+  font-weight: 700;
+  text-align: left;
+  padding: 0.6rem 0.65rem;
+  white-space: nowrap;
+}
+.kmc-table tbody td { padding: 0.6rem 0.65rem; border-bottom: 1px solid var(--kmc-border); color: var(--kmc-navy); vertical-align: top; }
+.kmc-table tbody tr:nth-child(even) { background: var(--kmc-tint); }
+.table-wrap { overflow-x: auto; }
+
+.admin-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.empty-state { color: var(--kmc-slate); font-size: 0.875rem; text-align: center; padding: 1.5rem 0; }
+.loading { color: var(--kmc-slate); font-size: 0.875rem; text-align: center; padding: 1.5rem 0; }
+
+.notice {
+  background: var(--kmc-tint);
+  border: 1px solid var(--kmc-border);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  color: var(--kmc-slate);
+  margin-bottom: 1.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="kmc-header">
+  <span class="kmc-wordmark">KMC</span>
+  <span class="kmc-header-title" id="headerTitle">Remote Session Booking</span>
+</div>
+
+<div class="container">
+
+  <!-- ADMIN PASSCODE GATE -->
+  <div id="adminGate" style="display:none;">
+    <div class="kmc-card" style="max-width:360px; margin:3rem auto;">
+      <span class="kmc-kicker">Admin access</span>
+      <h1 class="kmc-h1" style="font-size:1.4rem;">Enter passcode</h1>
+      <div class="field">
+        <input type="password" id="adminPasscodeInput" placeholder="Passcode" onkeydown="if(event.key==='Enter') checkAdminPasscode()" />
+      </div>
+      <div id="adminGateError" class="error-text" style="display:none;">Incorrect passcode.</div>
+      <button class="kmc-btn kmc-btn--accent" onclick="checkAdminPasscode()">Unlock dashboard</button>
+    </div>
+  </div>
+
+  <!-- BOOKING VIEW -->
+  <div id="bookingView">
+    <div id="bookingFormWrap">
+      <span class="kmc-kicker">Schedule a remote session</span>
+      <h1 class="kmc-h1">Reserve your slot</h1>
+      <p class="kmc-caption">Fill in your details, pick a date and time, and we'll confirm your remote session. Each time slot holds up to 10 registrations.</p>
+
+      <div class="kmc-card">
+        <div class="field">
+          <label for="clientName">Employee name</label>
+          <input type="text" id="clientName" placeholder="e.g. Juan Dela Cruz" />
+        </div>
+        <div class="field">
+          <label for="companyName">Client / Company Name</label>
+          <input type="text" id="companyName" placeholder="e.g. Acme Corp" />
+        </div>
+
+        <div class="field">
+          <label>Preferred contact method</label>
+          <div class="radio-group">
+            <label class="radio-option" id="optPhone">
+              <input type="radio" name="contactMethod" value="phone" onchange="setContactMethod('phone')" />
+              Phone call
+            </label>
+            <label class="radio-option" id="optEmail">
+              <input type="radio" name="contactMethod" value="email" onchange="setContactMethod('email')" />
+              Email
+            </label>
+            <label class="radio-option" id="optOther">
+              <input type="radio" name="contactMethod" value="other" onchange="setContactMethod('other')" />
+              Others
+            </label>
+          </div>
+          <div id="contactValueWrap" class="field" style="margin-top:0.85rem; display:none;">
+            <label id="contactValueLabel" for="contactValue">Phone number</label>
+            <input type="text" id="contactValue" placeholder="" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="sessionDate">Preferred date</label>
+          <input type="date" id="sessionDate" onchange="onDateChange()" />
+        </div>
+
+        <div class="field" id="timeSlotField" style="display:none;">
+          <label>Available time slots</label>
+          <div id="slotsGrid" class="slots-grid"></div>
+          <p class="helper-text">Slots fill up on a first-come, first-served basis — max 10 registrations per slot.</p>
+        </div>
+
+        <div id="formError" class="error-text" style="display:none;"></div>
+
+        <div style="margin-top:1.25rem;">
+          <button class="kmc-btn kmc-btn--accent" id="submitBtn" onclick="submitBooking()">Confirm booking</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="confirmWrap" style="display:none;">
+      <div class="kmc-card confirm-box">
+        <span class="kmc-kicker">Booking confirmed</span>
+        <h1 class="kmc-h1" id="confirmName">You're booked!</h1>
+        <p class="kmc-caption" id="confirmDetails"></p>
+        <button class="kmc-btn" onclick="resetForm()">Book another session</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN VIEW -->
+  <div id="adminView" style="display:none;">
+    <span class="kmc-kicker">Admin</span>
+    <h1 class="kmc-h1">Session bookings</h1>
+    <p class="kmc-caption">All client registrations for remote sessions, newest data pulled live from shared storage.</p>
+
+    <div class="notice">This dashboard is only reachable via this link's <code>#admin</code> address plus a passcode — clients booking a session never see it.</div>
+
+    <div class="admin-toolbar">
+      <div>
+        <label style="margin-bottom:0.2rem;">Filter by date</label>
+        <input type="date" id="adminDateFilter" onchange="renderAdminTable()" style="max-width:180px;" />
+      </div>
+      <button class="kmc-btn kmc-btn--small" onclick="exportToExcel()">Export to Excel</button>
+    </div>
+
+    <div class="kmc-card">
+      <span class="kmc-kicker">Schedule overview</span>
+      <p class="helper-text" style="margin-top:-0.4rem; margin-bottom:0.85rem;">Click a date to see who's booked in each time slot.</p>
+      <div id="adminScheduleOverview"></div>
+    </div>
+
+    <div class="kmc-card">
+      <div id="adminSlotSummary"></div>
+    </div>
+
+    <div class="kmc-card">
+      <span class="kmc-kicker">Full booking list</span>
+      <div id="adminTableWrap" class="table-wrap" style="margin-top:0.5rem;">
+        <div class="loading">Loading bookings…</div>
+      </div>
+    </div>
+
+    <button class="kmc-btn kmc-btn--small" style="width:auto;" onclick="loadBookings(true)">Refresh</button>
+  </div>
+
+</div>
+
+<script>
+// ---------- Config ----------
+// Slots reflect the dominant OSS shift start times across all sites (BGC, Alabang, Makati, etc.),
+// covering day and overnight coverage, derived from the TSG OSS schedule.
+const TIME_SLOTS = ["6:00 AM","7:00 AM","8:00 AM","9:00 AM","10:00 AM","12:00 PM","1:00 PM","2:00 PM","8:00 PM","9:00 PM","10:00 PM"];
+const SLOT_CAPACITY = 10;
+const ADMIN_PASSCODE = "kmc-admin-2026"; // change this to your own passcode
+
+let contactMethod = null;
+let selectedTime = null;
+let allBookingsCache = [];
+
+// ---------- Routing: admin is only reachable via #admin, never shown to clients ----------
+function isAdminRoute() {
+  return window.location.hash.replace('#', '').toLowerCase() === 'admin';
+}
+
+function showBookingView() {
+  document.getElementById('adminGate').style.display = 'none';
+  document.getElementById('adminView').style.display = 'none';
+  document.getElementById('bookingView').style.display = 'block';
+  document.getElementById('headerTitle').textContent = 'Remote Session Booking';
+}
+
+function showAdminGate() {
+  document.getElementById('bookingView').style.display = 'none';
+  document.getElementById('adminView').style.display = 'none';
+  document.getElementById('adminGate').style.display = 'block';
+  document.getElementById('headerTitle').textContent = 'Admin Access';
+  setTimeout(() => document.getElementById('adminPasscodeInput').focus(), 50);
+}
+
+function showAdminDashboard() {
+  document.getElementById('bookingView').style.display = 'none';
+  document.getElementById('adminGate').style.display = 'none';
+  document.getElementById('adminView').style.display = 'block';
+  document.getElementById('headerTitle').textContent = 'Admin Dashboard';
+  loadBookings();
+}
+
+function checkAdminPasscode() {
+  const input = document.getElementById('adminPasscodeInput').value;
+  if (input === ADMIN_PASSCODE) {
+    sessionStorageSafeSet('kmcAdminUnlocked', '1');
+    showAdminDashboard();
+  } else {
+    document.getElementById('adminGateError').style.display = 'block';
+  }
+}
+
+// Artifacts can't use real sessionStorage — keep unlock state in a plain JS variable instead
+let adminUnlockedInMemory = false;
+function sessionStorageSafeSet(key, val) { adminUnlockedInMemory = true; }
+
+function routeOnLoad() {
+  if (isAdminRoute()) {
+    if (adminUnlockedInMemory) showAdminDashboard();
+    else showAdminGate();
+  } else {
+    showBookingView();
+  }
+}
+
+window.addEventListener('hashchange', routeOnLoad);
+
+// ---------- Contact method ----------
+function setContactMethod(method) {
+  contactMethod = method;
+  ['optPhone','optEmail','optOther'].forEach(id => document.getElementById(id).classList.remove('selected'));
+  const map = { phone: 'optPhone', email: 'optEmail', other: 'optOther' };
+  document.getElementById(map[method]).classList.add('selected');
+
+  const wrap = document.getElementById('contactValueWrap');
+  const label = document.getElementById('contactValueLabel');
+  const input = document.getElementById('contactValue');
+  wrap.style.display = 'block';
+  input.value = '';
+
+  if (method === 'phone') {
+    label.textContent = 'Phone number';
+    input.type = 'tel';
+    input.placeholder = 'e.g. 0917 123 4567';
+  } else if (method === 'email') {
+    label.textContent = 'Email address';
+    input.type = 'email';
+    input.placeholder = 'e.g. juan@company.com';
+  } else {
+    label.textContent = 'Preferred contact method';
+    input.type = 'text';
+    input.placeholder = 'Type how you\'d like to be reached';
+  }
+}
+
+// ---------- Date / slots ----------
+async function onDateChange() {
+  const date = document.getElementById('sessionDate').value;
+  const field = document.getElementById('timeSlotField');
+  const grid = document.getElementById('slotsGrid');
+  selectedTime = null;
+  if (!date) { field.style.display = 'none'; return; }
+
+  field.style.display = 'block';
+  grid.innerHTML = '<div class="loading">Checking availability…</div>';
+
+  const counts = await getSlotCounts(date);
+
+  grid.innerHTML = '';
+  TIME_SLOTS.forEach(time => {
+    const count = counts[time] || 0;
+    const full = count >= SLOT_CAPACITY;
+    const btn = document.createElement('button');
+    btn.className = 'slot-btn';
+    btn.disabled = full;
+    btn.innerHTML = `${time}<span class="cap">${full ? 'Full' : (SLOT_CAPACITY - count) + ' left'}</span>`;
+    btn.onclick = () => selectSlot(time, btn);
+    grid.appendChild(btn);
+  });
+}
+
+function selectSlot(time, btn) {
+  selectedTime = time;
+  document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+// ---------- Storage helpers ----------
+async function getAllBookings() {
+  try {
+    const list = await window.storage.list('booking:', true);
+    if (!list || !list.keys || list.keys.length === 0) return [];
+    const bookings = [];
+    for (const key of list.keys) {
+      try {
+        const res = await window.storage.get(key, true);
+        if (res && res.value) bookings.push(JSON.parse(res.value));
+      } catch (e) { /* skip unreadable entry */ }
+    }
+    return bookings;
+  } catch (e) {
+    return [];
+  }
+}
+
+async function getSlotCounts(date) {
+  const all = await getAllBookings();
+  const counts = {};
+  all.filter(b => b.date === date).forEach(b => {
+    counts[b.time] = (counts[b.time] || 0) + 1;
+  });
+  return counts;
+}
+
+// ---------- Submit ----------
+function showError(msg) {
+  const el = document.getElementById('formError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function clearError() {
+  document.getElementById('formError').style.display = 'none';
+}
+
+async function submitBooking() {
+  clearError();
+  const name = document.getElementById('clientName').value.trim();
+  const company = document.getElementById('companyName').value.trim();
+  const contactValue = document.getElementById('contactValue').value.trim();
+  const date = document.getElementById('sessionDate').value;
+
+  if (!name) return showError('Please enter the employee name.');
+  if (!company) return showError('Please enter the company.');
+  if (!contactMethod) return showError('Please select a preferred contact method.');
+  if (!contactValue) return showError('Please fill in your contact details.');
+  if (!date) return showError('Please choose a preferred date.');
+  if (!selectedTime) return showError('Please choose an available time slot.');
+
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Booking…';
+
+  // Re-check capacity right before writing, to reduce (not eliminate) double-booking risk
+  const counts = await getSlotCounts(date);
+  if ((counts[selectedTime] || 0) >= SLOT_CAPACITY) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Confirm booking';
+    showError('Sorry, that slot just filled up. Please pick another time.');
+    onDateChange();
+    return;
+  }
+
+  const booking = {
+    name, company,
+    contactMethod,
+    contactValue,
+    date,
+    time: selectedTime,
+    submittedAt: new Date().toISOString()
+  };
+  const id = `${date}_${selectedTime.replace(/[^0-9A-Za-z]/g,'')}_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+
+  try {
+    const result = await window.storage.set(`booking:${id}`, JSON.stringify(booking), true);
+    if (!result) throw new Error('Storage returned no result');
+  } catch (e) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Confirm booking';
+    showError('Something went wrong saving your booking. Please try again.');
+    return;
+  }
+
+  document.getElementById('bookingFormWrap').style.display = 'none';
+  document.getElementById('confirmWrap').style.display = 'block';
+  document.getElementById('confirmName').textContent = `Thanks, ${name}!`;
+  const methodLabel = contactMethod === 'phone' ? 'Phone call' : contactMethod === 'email' ? 'Email' : 'Preferred method';
+  document.getElementById('confirmDetails').textContent =
+    `Your remote session is set for ${formatDate(date)} at ${selectedTime}. We'll reach you via ${methodLabel}: ${contactValue}.`;
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Confirm booking';
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function resetForm() {
+  document.getElementById('clientName').value = '';
+  document.getElementById('companyName').value = '';
+  document.getElementById('contactValue').value = '';
+  document.getElementById('sessionDate').value = '';
+  document.getElementById('timeSlotField').style.display = 'none';
+  document.getElementById('contactValueWrap').style.display = 'none';
+  document.querySelectorAll('input[name="contactMethod"]').forEach(i => i.checked = false);
+  ['optPhone','optEmail','optOther'].forEach(id => document.getElementById(id).classList.remove('selected'));
+  contactMethod = null;
+  selectedTime = null;
+  clearError();
+  document.getElementById('confirmWrap').style.display = 'none';
+  document.getElementById('bookingFormWrap').style.display = 'block';
+}
+
+// ---------- Admin ----------
+async function loadBookings(forceRefresh) {
+  const wrap = document.getElementById('adminTableWrap');
+  wrap.innerHTML = '<div class="loading">Loading bookings…</div>';
+  document.getElementById('adminScheduleOverview').innerHTML = '<div class="loading">Loading schedule…</div>';
+  allBookingsCache = await getAllBookings();
+  renderScheduleOverview();
+  renderAdminTable();
+  renderSlotSummary();
+}
+
+function renderScheduleOverview() {
+  const el = document.getElementById('adminScheduleOverview');
+  if (allBookingsCache.length === 0) {
+    el.innerHTML = '<p class="empty-state">No sessions booked yet.</p>';
+    return;
+  }
+  const byDate = {};
+  allBookingsCache.forEach(b => {
+    if (!byDate[b.date]) byDate[b.date] = {};
+    if (!byDate[b.date][b.time]) byDate[b.date][b.time] = [];
+    byDate[b.date][b.time].push(b);
+  });
+  const dates = Object.keys(byDate).sort();
+
+  let html = '';
+  dates.forEach(date => {
+    const timesForDate = byDate[date];
+    const totalForDate = Object.values(timesForDate).reduce((sum, arr) => sum + arr.length, 0);
+    const sortedTimes = TIME_SLOTS.filter(t => timesForDate[t]);
+
+    html += `<details style="margin-bottom:0.6rem; border:1px solid var(--kmc-border); border-radius:4px; padding:0.5rem 0.75rem;">`;
+    html += `<summary style="cursor:pointer; font-weight:700; font-size:0.875rem; color:var(--kmc-navy);">${formatDate(date)} — ${totalForDate} registration${totalForDate === 1 ? '' : 's'}</summary>`;
+    html += `<div style="margin-top:0.6rem;">`;
+    sortedTimes.forEach(time => {
+      const clients = timesForDate[time];
+      const full = clients.length >= SLOT_CAPACITY;
+      html += `<div style="margin-bottom:0.5rem;">`;
+      html += `<div style="font-weight:700; font-size:0.8125rem; color:var(--kmc-navy);">${time} — ${clients.length}/${SLOT_CAPACITY}${full ? ' (Full)' : ''}</div>`;
+      html += `<ul style="margin:0.25rem 0 0; padding-left:1.1rem; font-size:0.8125rem; color:var(--kmc-slate);">`;
+      clients.forEach(c => {
+        html += `<li>${escapeHtml(c.name)} — ${escapeHtml(c.company)}</li>`;
+      });
+      html += `</ul></div>`;
+    });
+    html += `</div></details>`;
+  });
+  el.innerHTML = html;
+}
+
+function renderSlotSummary() {
+  const el = document.getElementById('adminSlotSummary');
+  if (allBookingsCache.length === 0) {
+    el.innerHTML = '<p class="empty-state">No bookings yet.</p>';
+    return;
+  }
+  const byDateTime = {};
+  allBookingsCache.forEach(b => {
+    const key = `${b.date}|${b.time}`;
+    byDateTime[key] = (byDateTime[key] || 0) + 1;
+  });
+  const keys = Object.keys(byDateTime).sort();
+  let html = '<span class="kmc-kicker">Capacity by slot</span><div class="table-wrap"><table class="kmc-table"><thead><tr><th>Date</th><th>Time</th><th>Registered</th><th>Status</th></tr></thead><tbody>';
+  keys.forEach(k => {
+    const [date, time] = k.split('|');
+    const count = byDateTime[k];
+    const status = count >= SLOT_CAPACITY ? 'Full' : `${SLOT_CAPACITY - count} open`;
+    html += `<tr><td>${formatDate(date)}</td><td>${time}</td><td>${count}/${SLOT_CAPACITY}</td><td>${status}</td></tr>`;
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+function renderAdminTable() {
+  const wrap = document.getElementById('adminTableWrap');
+  const filterDate = document.getElementById('adminDateFilter').value;
+  let rows = allBookingsCache.slice();
+  if (filterDate) rows = rows.filter(b => b.date === filterDate);
+
+  rows.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+
+  if (rows.length === 0) {
+    wrap.innerHTML = '<p class="empty-state">No bookings found.</p>';
+    return;
+  }
+
+  let html = '<table class="kmc-table"><thead><tr><th>Employee name</th><th>Client / Company Name</th><th>Contact method</th><th>Contact details</th><th>Date</th><th>Time</th><th>Submitted</th></tr></thead><tbody>';
+  rows.forEach(b => {
+    const methodLabel = b.contactMethod === 'phone' ? 'Phone call' : b.contactMethod === 'email' ? 'Email' : 'Others';
+    html += `<tr><td>${escapeHtml(b.name)}</td><td>${escapeHtml(b.company)}</td><td>${methodLabel}</td><td>${escapeHtml(b.contactValue)}</td><td>${formatDate(b.date)}</td><td>${b.time}</td><td>${new Date(b.submittedAt).toLocaleString()}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+function exportToExcel() {
+  if (!allBookingsCache || allBookingsCache.length === 0) {
+    alert('No bookings to export yet.');
+    return;
+  }
+  const rows = allBookingsCache
+    .slice()
+    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
+    .map(b => ({
+      'Employee Name': b.name,
+      'Client / Company Name': b.company,
+      'Contact Method': b.contactMethod === 'phone' ? 'Phone call' : b.contactMethod === 'email' ? 'Email' : 'Others',
+      'Contact Details': b.contactValue,
+      'Session Date': b.date,
+      'Session Time': b.time,
+      'Submitted At': new Date(b.submittedAt).toLocaleString()
+    }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [ {wch:22}, {wch:22}, {wch:16}, {wch:26}, {wch:14}, {wch:12}, {wch:20} ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Bookings');
+  XLSX.writeFile(wb, `KMC-Remote-Session-Bookings-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ---------- Init ----------
+(function init() {
+  const dateInput = document.getElementById('sessionDate');
+  const today = new Date().toISOString().slice(0, 10);
+  dateInput.min = today;
+  document.getElementById('adminDateFilter').min = today;
+  routeOnLoad();
+})();
+</script>
+
+</body>
+</html>
