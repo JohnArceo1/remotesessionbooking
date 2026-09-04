@@ -1,5 +1,24 @@
 function doGet(e) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+
+  // If this GET request is actually a "save booking" call, handle it here.
+  if (e.parameter && e.parameter.action === 'add' && e.parameter.data) {
+    var booking = JSON.parse(e.parameter.data);
+    sheet.appendRow([
+      booking.id,
+      booking.name,
+      booking.company,
+      booking.contactMethod,
+      booking.contactValue,
+      booking.date,
+      booking.time,
+      booking.submittedAt
+    ]);
+    return ContentService.createTextOutput(JSON.stringify({ success: true }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // Otherwise, return all bookings.
   var data = sheet.getDataRange().getValues();
   var headers = data[0];
   var rows = data.slice(1);
@@ -9,22 +28,5 @@ function doGet(e) {
     return obj;
   });
   return ContentService.createTextOutput(JSON.stringify(bookings))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doPost(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var body = JSON.parse(e.postData.contents);
-  sheet.appendRow([
-    body.id,
-    body.name,
-    body.company,
-    body.contactMethod,
-    body.contactValue,
-    body.date,
-    body.time,
-    body.submittedAt
-  ]);
-  return ContentService.createTextOutput(JSON.stringify({ success: true }))
     .setMimeType(ContentService.MimeType.JSON);
 }
